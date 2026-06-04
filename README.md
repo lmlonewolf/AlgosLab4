@@ -21,11 +21,10 @@
 ---
 
 ## Реализация
-### Класс Gradebook
+### Класс `Gradebook`
 **Структура**
 ```cpp
 class Gradebook {
-private:
     struct Student {
         std::string name;
         int id = -1;
@@ -39,6 +38,7 @@ private:
     std::map<std::string, size_t> name_index;
     std::map<int, size_t> id_index;
 
+    // Вспомогательные методы
     void more_size(void);
     void rebuild_indexes(void);
 
@@ -46,16 +46,14 @@ public:
     Gradebook();
     ~Gradebook();
 
-    // Запрет копирования для безопасности работы с памятью (Правило трёх)
-    Gradebook(const Gradebook&) = delete;
-    Gradebook& operator=(const Gradebook&) = delete;
-
+// Обязательная часть
     void add_student(const std::string& name, int id, int score);
     bool update_score(int id, int new_score);
     bool update_score(const std::string& name, int new_score);
     int get_score(const std::string& name) const;
     int get_score(int id) const;
 
+// Вариативная часть
     double get_average_score(void) const;
     int print_max_score_student(void) const;
     int print_min_score_student(void) const;
@@ -105,6 +103,7 @@ void Gradebook::rebuild_indexes() {
 
 **Основные методы**
 ```cpp
+// Добавить студента
 void Gradebook::add_student(const std::string& name, int id, int score) {
     auto it = id_index.find(id);
     if (it != id_index.end()) {
@@ -128,6 +127,7 @@ void Gradebook::add_student(const std::string& name, int id, int score) {
     id_index[id] = new_idx;
 }
 
+// Обновить балл
 bool Gradebook::update_score(int id, int new_score) {
     auto it = id_index.find(id);
     if (it != id_index.end()) {
@@ -136,7 +136,6 @@ bool Gradebook::update_score(int id, int new_score) {
     }
     return false;
 }
-
 bool Gradebook::update_score(const std::string& name, int new_score) {
     auto it = name_index.find(name);
     if (it != name_index.end()) {
@@ -146,6 +145,7 @@ bool Gradebook::update_score(const std::string& name, int new_score) {
     return false;
 }
 
+// Получить балл
 int Gradebook::get_score(const std::string& name) const {
     auto it = name_index.find(name);
     if (it != name_index.end()) {
@@ -153,7 +153,6 @@ int Gradebook::get_score(const std::string& name) const {
     }
     return -1;
 }
-
 int Gradebook::get_score(int id) const {
     auto it = id_index.find(id);
     if (it != id_index.end()) {
@@ -165,7 +164,7 @@ int Gradebook::get_score(int id) const {
 
 **Вариативная часть**
 ```cpp
-
+// Средний балл
 double Gradebook::average_score() const {
     if (size == 0)
         return 0.0;
@@ -175,6 +174,7 @@ double Gradebook::average_score() const {
     return sum / size;
 }
 
+// Студент с максимальным баллом
 int Gradebook::print_max_score_student() const {
     if (size == 0) return -1;
     size_t max_idx = 0;
@@ -186,6 +186,7 @@ int Gradebook::print_max_score_student() const {
     return students[max_idx].score;
 }
 
+// Студент с минимальным баллом
 int Gradebook::print_min_score_student() const {
     if (size == 0) return -1;
     size_t min_idx = 0;
@@ -197,6 +198,7 @@ int Gradebook::print_min_score_student() const {
     return students[min_idx].score;
 }
 
+// Студенты с баллом выше порога
 void Gradebook::print_since(int min) const {
     std::cout << "Students with score above " << min << ':' << std::endl;
     bool found = false;
@@ -211,6 +213,7 @@ void Gradebook::print_since(int min) const {
     std::cout << std::endl;
 }
 
+// Количество студентов с баллом ниже порога
 size_t Gradebook::count_before(int min) const {
     size_t count = 0;
     for (size_t i = 0; i < size; ++i) {
@@ -220,14 +223,15 @@ size_t Gradebook::count_before(int min) const {
     return count;
 }
 
+// Проверка наличия студента в журнале
 bool Gradebook::is_student(const std::string& name) const {
     return name_index.find(name) != name_index.end();
 }
-
 bool Gradebook::is_student(int id) const {
     return id_index.find(id) != id_index.end();
 }
 
+// Удаление студента
 bool Gradebook::remove_student(int id) {
     auto it = id_index.find(id);
     if (it == id_index.end())
@@ -243,6 +247,7 @@ bool Gradebook::remove_student(int id) {
     return true;
 }
 
+// Сохранение в файл
 bool Gradebook::save_to_file(const std::string& filename) const {
     std::ofstream file(filename);
     if (!file.is_open())
