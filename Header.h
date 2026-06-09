@@ -13,21 +13,11 @@ class Gradebook
         int score = -1;
     };
 
-    Student *students;
-    size_t capacity;
-    size_t size;
-
-    std::map<std::string, size_t> name_index;
-    std::map<int, size_t> id_index;
-
-    void more_size();
-
-    void rebuild_indexes();
+    int count = 0;
+    std::map<std::string, Student*> stud_name;
+    std::map<int, Student*> stud_id;
 
 public:
-    Gradebook();
-    ~Gradebook();
-
     void add_student(const std::string &name, int id, int score);
     bool update_score(int id, int new_score);
     bool update_score(const std::string &name, int new_score);
@@ -35,8 +25,8 @@ public:
     int get_score(int id) const;
 
     double average_score() const;
-    int print_max_score_student() const;
-    int print_min_score_student() const;
+    void print_max_score_student() const;
+    void print_min_score_student() const;
     void print() const;
     void print_since(int min) const;
     size_t count_before(int min) const;

@@ -31,21 +31,12 @@ class Gradebook {
         int score = -1;
     };
 
-    Student* students;     
-    size_t capacity;       
-    size_t size;
-
+    int count = 0;
     std::map<std::string, size_t> name_index;
     std::map<int, size_t> id_index;
 
-    // Вспомогательные методы
-    void more_size(void);
-    void rebuild_indexes(void);
 
 public:
-    Gradebook();
-    ~Gradebook();
-
 // Обязательная часть
     void add_student(const std::string& name, int id, int score);
     bool update_score(int id, int new_score);
@@ -55,8 +46,8 @@ public:
 
 // Вариативная часть
     double get_average_score(void) const;
-    int print_max_score_student(void) const;
-    int print_min_score_student(void) const;
+    void print_max_score_student(void) const;
+    void print_min_score_student(void) const;
     void print_above_threshold(int threshold) const;
     size_t count_below_threshold(int threshold) const;
     bool has_student(const std::string& name) const;
@@ -68,78 +59,35 @@ public:
 };
 ```
 
-**Конструктор, деструктор и управление памятью**
-```cpp
-Gradebook::Gradebook() : students(nullptr), capacity(0), size(0) {}
-
-Gradebook::~Gradebook() {
-    delete[] students;
-}
-
-void Gradebook::more_size() {
-    if (capacity == 0)
-        capacity = 4;
-    else
-        capacity *= 2;
-    Student* new_students = new Student[capacity];
-
-    for (size_t i = 0; i < size; ++i) {
-        new_students[i] = students[i];
-    }
-
-    delete[] students;
-    students = new_students;
-}
-
-void Gradebook::rebuild_indexes() {
-    name_index.clear();
-    id_index.clear();
-    for (size_t i = 0; i < size; ++i) {
-        name_index[students[i].name] = i;
-        id_index[students[i].id] = i;
-    }
-}
-```
 
 **Основные методы**
 ```cpp
 // Добавить студента
 void Gradebook::add_student(const std::string& name, int id, int score) {
-    auto it = id_index.find(id);
-    if (it != id_index.end()) {
-        size_t idx = it->second;
-        name_index.erase(students[idx].name);
-        students[idx].name = name;
-        students[idx].score = score;
-        name_index[name] = idx;
+    if (stud_id.find(id) != stud_id.end()) {
+        Student* stud = stud_id[id];
+        stud->name = name;
+        stud->score = score;
         return;
     }
 
-    if (size >= capacity) {
-        more_size();
-    }
-
-    size_t new_idx = size;
-    students[new_idx] = { name, id, score };
-    size++;
-
-    name_index[name] = new_idx;
-    id_index[id] = new_idx;
+    Student* stud = new Student(name, id, score);
+    stud_name[name] = stud;
+    stud_id[id] = stud;
+    count += 1;
 }
 
 // Обновить балл
 bool Gradebook::update_score(int id, int new_score) {
-    auto it = id_index.find(id);
-    if (it != id_index.end()) {
-        students[it->second].score = new_score;
+    if (stud_id.find(id) != stud_id.end()) {
+        stud_id[id]->score = new_score;
         return true;
     }
     return false;
 }
 bool Gradebook::update_score(const std::string& name, int new_score) {
-    auto it = name_index.find(name);
-    if (it != name_index.end()) {
-        students[it->second].score = new_score;
+    if (stud_name.find(name) != stud_name.end()) {
+        stud_name[name]->score = new_score;
         return true;
     }
     return false;
@@ -147,17 +95,15 @@ bool Gradebook::update_score(const std::string& name, int new_score) {
 
 // Получить балл
 int Gradebook::get_score(const std::string& name) const {
-    auto it = name_index.find(name);
-    if (it != name_index.end()) {
-        return students[it->second].score;
-    }
+    auto it = stud_name.find(name);
+    if (it != stud_name.end())
+        return it->second->score;
     return -1;
 }
 int Gradebook::get_score(int id) const {
-    auto it = id_index.find(id);
-    if (it != id_index.end()) {
-        return students[it->second].score;
-    }
+    auto it = stud_id.find(id);
+    if (it != stud_id.end())
+        return it->second->score;
     return -1;
 }
 ```
@@ -166,45 +112,57 @@ int Gradebook::get_score(int id) const {
 ```cpp
 // Средний балл
 double Gradebook::average_score() const {
-    if (size == 0)
+    if (count == 0)
         return 0.0;
     double sum = 0;
-    for (size_t i = 0; i < size; ++i)
-        sum += students[i].score;
-    return sum / size;
+    for (const auto& it : stud_id)
+        sum += it.second->score;
+    return sum / count;
 }
 
 // Студент с максимальным баллом
-int Gradebook::print_max_score_student() const {
-    if (size == 0) return -1;
-    size_t max_idx = 0;
-    for (size_t i = 1; i < size; ++i) {
-        if (students[i].score > students[max_idx].score)
-            max_idx = i;
+void Gradebook::print_max_score_student() const {
+    if (count == 0) {
+        std::cout << "Nobody students" << std::endl;
+        return;
     }
-    std::cout << "Best student: " << students[max_idx].name << " (ID: " << students[max_idx].id << ") Score " << students[max_idx].score << std::endl;
-    return students[max_idx].score;
+    Student* max_stud = nullptr;
+    int max = -1;
+    for (const auto& it : stud_id) {
+        if (it.second->score >= max) {
+            max_stud = it.second;
+            max = max_stud->score;
+        }
+    }
+    std::cout << "Best student: " << max_stud->name << " (ID: " << max_stud->id << ") Score " << max_stud->score << std::endl;
 }
 
 // Студент с минимальным баллом
-int Gradebook::print_min_score_student() const {
-    if (size == 0) return -1;
-    size_t min_idx = 0;
-    for (size_t i = 1; i < size; ++i) {
-        if (students[i].score < students[min_idx].score)
-            min_idx = i;
+void Gradebook::print_min_score_student() const {
+    if (count == 0) {
+        std::cout << "Nobody students" << std::endl;
+        return;
     }
-    std::cout << "Worst student: " << students[min_idx].name << " (ID: " << students[min_idx].id << ") Score " << students[min_idx].score << std::endl;
-    return students[min_idx].score;
+    Student* min_stud = nullptr;
+    int min = -1;
+    for (const auto& it : stud_id) {
+        if (min == -1)
+            min = it.second->score;
+        if (it.second->score <= min) {
+            min_stud = it.second;
+            min = min_stud->score;
+        }
+    }
+    std::cout << "Worst student: " << min_stud->name << " (ID: " << min_stud->id << ") Score " << min_stud->score << std::endl;
 }
 
 // Студенты с баллом выше порога
 void Gradebook::print_since(int min) const {
     std::cout << "Students with score above " << min << ':' << std::endl;
     bool found = false;
-    for (size_t i = 0; i < size; ++i) {
-        if (students[i].score >= min) {
-            std::cout << "ID: " << students[i].id << " | Name: " << students[i].name << " -> Score: " << students[i].score << std::endl;
+    for (const auto& it : stud_id) {
+        if (it.second->score >= min) {
+            std::cout << "ID: " << it.second->id << " | Name: " << it.second->name << " -> Score: " << it.second->score << std::endl;
             found = true;
         }
     }
@@ -216,8 +174,8 @@ void Gradebook::print_since(int min) const {
 // Количество студентов с баллом ниже порога
 size_t Gradebook::count_before(int min) const {
     size_t count = 0;
-    for (size_t i = 0; i < size; ++i) {
-        if (students[i].score < min)
+    for (const auto& it : stud_id) {
+        if (it.second->score < min)
             count++;
     }
     return count;
@@ -233,17 +191,13 @@ bool Gradebook::is_student(int id) const {
 
 // Удаление студента
 bool Gradebook::remove_student(int id) {
-    auto it = id_index.find(id);
-    if (it == id_index.end())
+    auto it = stud_id.find(id);
+    if (it == stud_id.end())
         return false;
 
-    size_t target_idx = it->second;
-
-    for (size_t i = target_idx; i < size - 1; ++i)
-        students[i] = students[i + 1];
-    size--;
-
-    rebuild_indexes();
+    std::string name = it->second->name;
+    stud_id.erase(id);
+    stud_name.erase(name);
     return true;
 }
 
@@ -253,9 +207,9 @@ bool Gradebook::save_to_file(const std::string& filename) const {
     if (!file.is_open())
         return false;
 
-    file << size << "\n";
-    for (size_t i = 0; i < size; ++i)
-        file << students[i].id << " " << students[i].score << " " << students[i].name << std::endl;
+    file << count << "\n";
+    for (const auto& it : stud_id)
+        file << it.second->id << " " << it.second->score << " " << it.second->name << std::endl;
     return true;
 }
 ```
